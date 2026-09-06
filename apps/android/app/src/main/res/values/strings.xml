@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhoneBeam</string>
+    <string name="milestone_m0">M0 · Local MediaProjection foundation</string>
+    <string name="m0_subtitle">This build only captures the screen on this device. It does not pair, stream, or allow remote control.</string>
+    <string name="capture_state_label">Capture state</string>
+    <string name="state_idle">Idle</string>
+    <string name="state_requesting">Requesting screen permission</string>
+    <string name="state_starting">Starting</string>
+    <string name="state_active">Screen sharing active</string>
+    <string name="state_stopping">Stopping</string>
+    <string name="state_stopped">Stopped</string>
+    <string name="state_error">Error</string>
+    <string name="consent_notice">Starting screen share opens the official Android screen-capture dialog. PhoneBeam cannot capture until you approve that system prompt. There is no in-app substitute for it.</string>
+    <string name="action_start_share">Start Screen Share</string>
+    <string name="action_stop_share">Stop Screen Share</string>
+    <string name="local_proof_title">Local capture proof</string>
+    <string name="local_proof_explanation">Frame counts prove MediaProjection is producing buffers. Switch to another app, then return: the count should keep rising and the last frame should show that app. A live thumbnail while PhoneBeam is visible will recurse; that is expected and is not a network preview.</string>
+    <string name="preview_caption">Last captured frame (downscaled, memory only, not saved).</string>
+    <string name="preview_content_description">Last captured screen frame</string>
+    <string name="frames_format">Frames received: %1$d</string>
+    <string name="size_format">%1$d × %2$d @ %3$d dpi</string>
+    <string name="fps_format">%1$.1f fps</string>
+    <string name="value_unavailable">—</string>
+    <string name="capture_notification_channel">Screen sharing</string>
+    <string name="capture_notification_channel_description">Shown the entire time PhoneBeam is capturing this screen.</string>
+    <string name="capture_notification_title">PhoneBeam is sharing this screen</string>
+    <string name="capture_notification_text">Screen capture is active. Stop sharing from this notification or in the app.</string>
+    <string name="error_notification_required">A visible notification is required while capturing. Screen share was not started.</string>
+    <string name="detail_permission_denied">Android denied screen capture. Nothing was captured.</string>
+    <string name="detail_projection_revoked">Android stopped the projection. A new system permission is required before capturing again.</string>
+</resources>

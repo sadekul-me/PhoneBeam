@@ -13,12 +13,11 @@ unsupported.
 
 ## Current phase
 
-Architecture decisions are locked and documented. This repository does not
-yet contain application code. Implementation will follow the milestone order
-in the architecture docs, starting with M0 (on-device MediaProjection
-foundation) only after review.
+**M0 — Android MediaProjection foundation** is in progress.
 
-Do not treat any debug capture path as a product remote stream.
+The architecture baseline is locked. Application code exists only under `apps/android/` and is limited to on-device screen capture: system MediaProjection consent, a visible foreground service, and local frame proof. There is no pairing, coordinator, WebRTC, or remote control yet.
+
+See [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
 
 ## Architecture
 
@@ -28,6 +27,7 @@ Do not treat any debug capture path as a product remote stream.
 - [Session lifecycle](docs/architecture/session-lifecycle.md)
 - [Threat model](docs/architecture/threat-model.md)
 - [Architecture decisions](docs/architecture/architecture-decisions.md)
+- [M0 implementation notes](docs/implementation/m0-mediaprojection.md)
 - [Pairing protocol](docs/protocol/pairing-protocol.md)
 - [Control protocol](docs/protocol/control-protocol.md)
 
