@@ -13,11 +13,11 @@ unsupported.
 
 ## Current phase
 
-**M0 — Android MediaProjection foundation** is in progress.
+**M1 — Secure session foundation** is in progress.
 
-The architecture baseline is locked. Application code exists only under `apps/android/` and is limited to on-device screen capture: system MediaProjection consent, a visible foreground service, and local frame proof. There is no pairing, coordinator, WebRTC, or remote control yet.
+M0 local MediaProjection remains as an on-device proof. M1 adds pairing, consent, capability grants, and a Go coordinator. There is still no WebRTC, TURN, remote input, or screen transmission.
 
-See [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
+See [M1 implementation notes](docs/implementation/m1-secure-session.md) and [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
 
 ## Architecture
 
@@ -28,6 +28,7 @@ See [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
 - [Threat model](docs/architecture/threat-model.md)
 - [Architecture decisions](docs/architecture/architecture-decisions.md)
 - [M0 implementation notes](docs/implementation/m0-mediaprojection.md)
+- [M1 implementation notes](docs/implementation/m1-secure-session.md)
 - [Pairing protocol](docs/protocol/pairing-protocol.md)
 - [Control protocol](docs/protocol/control-protocol.md)
 

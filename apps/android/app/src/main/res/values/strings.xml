@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PhoneBeam</string>
-    <string name="milestone_m0">M0 · Local MediaProjection foundation</string>
-    <string name="m0_subtitle">This build only captures the screen on this device. It does not pair, stream, or allow remote control.</string>
+    <string name="milestone_m0">M1 · Secure session foundation</string>
+    <string name="m0_subtitle">Pairing is separate from local screen capture. Approving a remote session does not start MediaProjection or send frames.</string>
     <string name="capture_state_label">Capture state</string>
     <string name="state_idle">Idle</string>
     <string name="state_requesting">Requesting screen permission</string>
@@ -29,4 +29,25 @@
     <string name="error_notification_required">A visible notification is required while capturing. Screen share was not started.</string>
     <string name="detail_permission_denied">Android denied screen capture. Nothing was captured.</string>
     <string name="detail_projection_revoked">Android stopped the projection. A new system permission is required before capturing again.</string>
+    <string name="action_scan_pairing">Scan Pairing QR</string>
+    <string name="pairing_does_not_capture">Scanning a QR never starts screen sharing. M0 local capture below stays a separate proof.</string>
+    <string name="pairing_scan_title">Scan pairing QR</string>
+    <string name="pairing_scan_hint">Only PhoneBeam pairing QR codes are accepted. Arbitrary URLs are ignored.</string>
+    <string name="pairing_camera_required">Camera permission is required to scan a pairing QR.</string>
+    <string name="pairing_reject_malformed">Not a PhoneBeam pairing QR.</string>
+    <string name="pairing_reject_version">Unknown pairing protocol version.</string>
+    <string name="pairing_reject_origin">Coordinator origin is not trusted.</string>
+    <string name="pairing_reject_expired">This pairing QR has expired.</string>
+    <string name="pairing_consent_title">Remote access request</string>
+    <string name="pairing_remote_request">Remote access request</string>
+    <string name="pairing_operator_label">Operator</string>
+    <string name="pairing_session_label">Session</string>
+    <string name="pairing_sas_label">PhoneBeam verification code</string>
+    <string name="pairing_sas_compare">Read this code aloud and confirm it matches the operator screen. Mismatch means reject.</string>
+    <string name="pairing_requested_caps">Requested capabilities (uncheck to withhold)</string>
+    <string name="pairing_device_caps">Available on this device in M1</string>
+    <string name="pairing_approve">Approve selected capabilities</string>
+    <string name="pairing_reject">Reject</string>
+    <string name="pairing_result_title">Session state</string>
+    <string name="pairing_no_stream">No remote screen, audio, or input in M1. MediaProjection is not started from pairing.</string>
 </resources>

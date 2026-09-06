@@ -18,6 +18,7 @@ import com.phonebeam.android.capture.CaptureService
 import com.phonebeam.android.capture.CaptureState
 import com.phonebeam.android.capture.CaptureUiState
 import com.phonebeam.android.databinding.ActivityMainBinding
+import com.phonebeam.android.pairing.ScanActivity
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -65,6 +66,9 @@ class MainActivity : AppCompatActivity() {
 
         binding.startButton.setOnClickListener { onStartClicked() }
         binding.stopButton.setOnClickListener { onStopClicked() }
+        binding.scanPairingButton.setOnClickListener {
+            startActivity(android.content.Intent(this, ScanActivity::class.java))
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
