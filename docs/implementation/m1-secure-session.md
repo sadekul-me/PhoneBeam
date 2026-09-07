@@ -56,7 +56,7 @@ Implemented session states:
 
 Terminal: `REJECTED`, `EXPIRED`, `CLOSED`
 
-`CONNECTED` is rejected. M2 does not exist yet.
+`CONNECTED` is reachable in M2 only after projection, authenticated SDP, and DTLS/peer-ready conditions. See [M2 implementation notes](m2-authenticated-webrtc-viewing.md).
 
 `REJECTED_CONSUMED` is the **losing scanner's** outcome, not a session-wide abort. The first valid scan keeps `APPROVAL_PENDING`. The second concurrent scan receives HTTP `409` / `rejected_consumed`. That matches exclusive lock without kicking the winner.
 

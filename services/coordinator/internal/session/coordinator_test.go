@@ -311,7 +311,7 @@ func TestOwnerGrantSubset(t *testing.T) {
 func TestHappyPathTransitions(t *testing.T) {
 	state := StateSessionCreated
 	var err error
-	for _, event := range []Event{EventIssueQR, EventScan, EventBeginApproval, EventApprove, EventBindCaps, EventClose} {
+	for _, event := range []Event{EventIssueQR, EventScan, EventBeginApproval, EventApprove, EventBindCaps, EventClose, EventFinishClose} {
 		state, err = Apply(state, event)
 		if err != nil {
 			t.Fatalf("%s: %v", event, err)

@@ -13,11 +13,11 @@ unsupported.
 
 ## Current phase
 
-**M1 — Secure session foundation** is in progress.
+**M2 — Authenticated realtime viewing** is implemented in code.
 
-M0 local MediaProjection remains as an on-device proof. M1 adds pairing, consent, capability grants, and a Go coordinator. There is still no WebRTC, TURN, remote input, or screen transmission.
+M0 local MediaProjection remains as an on-device proof. M1 pairing, consent, and capability grants remain required before any remote video. M2 adds authenticated WebRTC viewing from the paired browser. There is still no remote input, AccessibilityService, audio, recording, or unattended access.
 
-See [M1 implementation notes](docs/implementation/m1-secure-session.md) and [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
+See [M2 implementation notes](docs/implementation/m2-authenticated-webrtc-viewing.md), [M1 implementation notes](docs/implementation/m1-secure-session.md), and [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
 
 ## Architecture
 
@@ -29,6 +29,7 @@ See [M1 implementation notes](docs/implementation/m1-secure-session.md) and [M0 
 - [Architecture decisions](docs/architecture/architecture-decisions.md)
 - [M0 implementation notes](docs/implementation/m0-mediaprojection.md)
 - [M1 implementation notes](docs/implementation/m1-secure-session.md)
+- [M2 implementation notes](docs/implementation/m2-authenticated-webrtc-viewing.md)
 - [Pairing protocol](docs/protocol/pairing-protocol.md)
 - [Control protocol](docs/protocol/control-protocol.md)
 

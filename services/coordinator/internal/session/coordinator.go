@@ -2,12 +2,14 @@ package session
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"sync"
 	"time"
 
 	"phonebeam.dev/coordinator/internal/caps"
+	"phonebeam.dev/coordinator/internal/ice"
 	"phonebeam.dev/coordinator/internal/ids"
 	"phonebeam.dev/coordinator/internal/sas"
 )
@@ -15,17 +17,21 @@ import (
 const ProtocolVersion = 1
 
 var (
-	ErrNotFound          = errors.New("session not found")
-	ErrExpired           = errors.New("pairing expired")
-	ErrReplay            = errors.New("pairing already consumed")
-	ErrScanLocked        = errors.New("pairing already scanned")
-	ErrUnauthorized      = errors.New("unauthorized")
-	ErrUnknownCapability = errors.New("unknown capability")
-	ErrUnrequestedGrant  = errors.New("cannot grant unrequested capability")
-	ErrTerminal          = errors.New("session is terminal")
-	ErrPairingNotPending = errors.New("pairing is not awaiting approval")
-	ErrWrongPairing      = errors.New("pairing id mismatch")
-	ErrClosed            = errors.New("session is closed")
+	ErrNotFound            = errors.New("session not found")
+	ErrExpired             = errors.New("pairing expired")
+	ErrReplay              = errors.New("pairing already consumed")
+	ErrScanLocked          = errors.New("pairing already scanned")
+	ErrUnauthorized        = errors.New("unauthorized")
+	ErrUnknownCapability   = errors.New("unknown capability")
+	ErrUnrequestedGrant    = errors.New("cannot grant unrequested capability")
+	ErrTerminal            = errors.New("session is terminal")
+	ErrPairingNotPending   = errors.New("pairing is not awaiting approval")
+	ErrWrongPairing        = errors.New("pairing id mismatch")
+	ErrClosed              = errors.New("session is closed")
+	ErrSignalingNotAllowed = errors.New("signaling not allowed")
+	ErrRoleExclusive       = errors.New("role already connected")
+	ErrMissingScreenRead   = errors.New("screen.read is not granted")
+	ErrNotReady            = errors.New("media not ready for connected")
 )
 
 type Role string
@@ -46,6 +52,7 @@ type QRPayload struct {
 
 type PublicSession struct {
 	ID                    string     `json:"id"`
+	PairingID             string     `json:"pairing_id,omitempty"`
 	State                 State      `json:"state"`
 	OperatorDisplayName   string     `json:"operator_display_name"`
 	RequestedCapabilities []string   `json:"requested_capabilities"`
@@ -53,6 +60,13 @@ type PublicSession struct {
 	DeviceCapabilities    []string   `json:"device_capabilities"`
 	EffectiveCapabilities []string   `json:"effective_capabilities"`
 	SAS                   string     `json:"sas"`
+	SASMaterial           string     `json:"sas_material,omitempty"`
+	CaptureScope          string     `json:"capture_scope,omitempty"`
+	CaptureWidth          int        `json:"capture_width,omitempty"`
+	CaptureHeight         int        `json:"capture_height,omitempty"`
+	ConnectionPath        string     `json:"connection_path,omitempty"`
+	MediaTrusted          bool       `json:"media_trusted"`
+	TurnConfigured        bool       `json:"turn_configured"`
 	PairingExpiresAt      time.Time  `json:"pairing_expires_at"`
 	SessionExpiresAt      *time.Time `json:"session_expires_at"`
 	QR                    *QRPayload `json:"qr,omitempty"`
@@ -78,6 +92,21 @@ type Session struct {
 	HasPhoneToken       bool
 	ScanLocked          bool
 	PairingBurned       bool
+	AndroidFP           string
+	BrowserFP           string
+	OfferSeen           bool
+	AnswerSeen          bool
+	PhoneReady          bool
+	OperatorReady       bool
+	ProjectionLive      bool
+	CaptureScope        string
+	CaptureWidth        int
+	CaptureHeight       int
+	ConnectionPath      string
+	IceRestarts         int
+	RehandshakeUsed     bool
+	OperatorAttached    bool
+	PhoneAttached       bool
 }
 
 type Coordinator struct {
@@ -89,6 +118,7 @@ type Coordinator struct {
 	mu          sync.Mutex
 	byID        map[string]*Session
 	pairingToID map[string]string
+	ice         ice.Options
 }
 
 func NewCoordinator(origin string, qrTTL, sessionTTL time.Duration) *Coordinator {
@@ -106,6 +136,10 @@ func NewCoordinator(origin string, qrTTL, sessionTTL time.Duration) *Coordinator
 }
 
 func (c *Coordinator) Origin() string { return c.origin }
+
+func (c *Coordinator) SetICE(opt ice.Options) { c.ice = opt }
+
+func (c *Coordinator) SASKey() []byte { return append([]byte(nil), c.sasKey...) }
 
 type CreateResult struct {
 	Session       PublicSession
@@ -158,7 +192,7 @@ func (c *Coordinator) Create(operatorName string, requested []string) (*CreateRe
 	c.byID[sid] = sess
 	c.pairingToID[pid] = sid
 	c.mu.Unlock()
-	return &CreateResult{Session: c.public(sess, true), OperatorToken: opToken}, nil
+	return &CreateResult{Session: c.public(sess, true, false), OperatorToken: opToken}, nil
 }
 
 type ScanResult struct {
@@ -205,7 +239,7 @@ func (c *Coordinator) Scan(sid, pid string) (*ScanResult, error) {
 	sess.ScanLocked = true
 	sess.HasPhonePending = true
 	sess.PhonePendingHash = ids.HashToken(pending)
-	return &ScanResult{Session: c.public(sess, false), PhonePendingToken: pending}, nil
+	return &ScanResult{Session: c.public(sess, false, false), PhonePendingToken: pending}, nil
 }
 
 type ApproveInput struct {
@@ -261,7 +295,10 @@ func (c *Coordinator) Approve(sid string, token string, in ApproveInput) (*Appro
 	sess.HasPhoneToken = true
 	sess.PhoneTokenHash = ids.HashToken(phoneToken)
 	delete(c.pairingToID, sess.PairingID)
-	return &ApproveResult{Session: c.public(sess, false), PhoneToken: phoneToken}, nil
+	if !caps.Contains(sess.Effective, caps.ScreenRead) {
+		_ = c.apply(sess, EventViewNotRequested)
+	}
+	return &ApproveResult{Session: c.public(sess, false, true), PhoneToken: phoneToken}, nil
 }
 
 func (c *Coordinator) Reject(sid, token string) (*PublicSession, error) {
@@ -281,7 +318,7 @@ func (c *Coordinator) Reject(sid, token string) (*PublicSession, error) {
 	sess.PairingBurned = true
 	sess.HasPhonePending = false
 	delete(c.pairingToID, sess.PairingID)
-	pub := c.public(sess, false)
+	pub := c.public(sess, false, false)
 	return &pub, nil
 }
 
@@ -298,13 +335,8 @@ func (c *Coordinator) Close(sid, token string) (*PublicSession, error) {
 		}
 		return nil, ErrTerminal
 	}
-	if err := c.apply(sess, EventClose); err != nil {
-		return nil, err
-	}
-	sess.PairingBurned = true
-	sess.HasPhonePending = false
-	delete(c.pairingToID, sess.PairingID)
-	pub := c.public(sess, false)
+	c.finishCloseLocked(sess)
+	pub := c.public(sess, false, false)
 	return &pub, nil
 }
 
@@ -316,8 +348,10 @@ func (c *Coordinator) Get(sid, token string) (*PublicSession, error) {
 		return nil, err
 	}
 	c.expireIfNeededLocked(sess)
-	includeQR := sess.State == StateQRAvailable && c.roleOf(sess, token) == RoleOperator
-	pub := c.public(sess, includeQR)
+	role := c.roleOf(sess, token)
+	includeQR := sess.State == StateQRAvailable && role == RoleOperator
+	includeKey := role != RolePhonePending && sessReachedMedia(sess)
+	pub := c.public(sess, includeQR, includeKey)
 	return &pub, nil
 }
 
@@ -332,8 +366,7 @@ func (c *Coordinator) Sweep() {
 func (c *Coordinator) expireIfNeededLocked(sess *Session) {
 	now := c.now()
 	if !sess.State.Terminal() && sess.SessionExpiresAt != nil && now.After(*sess.SessionExpiresAt) {
-		_ = c.apply(sess, EventClose)
-		sess.PairingBurned = true
+		c.finishCloseLocked(sess)
 		return
 	}
 	if (sess.State == StateQRAvailable || sess.State == StatePhoneScanned || sess.State == StateApprovalPending) &&
@@ -389,9 +422,10 @@ func (c *Coordinator) roleOf(sess *Session, token string) Role {
 	return ""
 }
 
-func (c *Coordinator) public(sess *Session, includeQR bool) PublicSession {
+func (c *Coordinator) public(sess *Session, includeQR, includeKey bool) PublicSession {
 	pub := PublicSession{
 		ID:                    sess.ID,
+		PairingID:             sess.PairingID,
 		State:                 sess.State,
 		OperatorDisplayName:   sess.OperatorDisplayName,
 		RequestedCapabilities: append([]string{}, sess.Requested...),
@@ -399,8 +433,17 @@ func (c *Coordinator) public(sess *Session, includeQR bool) PublicSession {
 		DeviceCapabilities:    append([]string{}, sess.Device...),
 		EffectiveCapabilities: append([]string{}, sess.Effective...),
 		SAS:                   sess.SAS,
+		CaptureScope:          sess.CaptureScope,
+		CaptureWidth:          sess.CaptureWidth,
+		CaptureHeight:         sess.CaptureHeight,
+		ConnectionPath:        sess.ConnectionPath,
+		MediaTrusted:          sess.State == StateConnected,
+		TurnConfigured:        c.ice.TURNSecret != "" && len(c.ice.TURNURIs) > 0,
 		PairingExpiresAt:      sess.PairingExpiresAt,
 		SessionExpiresAt:      sess.SessionExpiresAt,
+	}
+	if includeKey {
+		pub.SASMaterial = base64.RawURLEncoding.EncodeToString(c.sasKey)
 	}
 	if includeQR && sess.State == StateQRAvailable && !sess.PairingBurned {
 		pub.QR = &QRPayload{

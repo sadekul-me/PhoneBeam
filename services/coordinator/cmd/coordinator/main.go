@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"phonebeam.dev/coordinator/internal/httpapi"
+	"phonebeam.dev/coordinator/internal/ice"
 	"phonebeam.dev/coordinator/internal/session"
 )
 
@@ -20,6 +21,12 @@ func main() {
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	coord := session.NewCoordinator(origin, qrTTL, sessionTTL)
+	coord.SetICE(ice.Options{
+		STUNURIs:        splitEnv("PHONEBEAM_STUN_URIS", "stun:stun.l.google.com:19302"),
+		TURNURIs:        splitEnv("PHONEBEAM_TURN_URIS", ""),
+		TURNSecret:      strings.TrimSpace(os.Getenv("PHONEBEAM_TURN_SECRET")),
+		TransportPolicy: env("PHONEBEAM_ICE_TRANSPORT_POLICY", "all"),
+	})
 	go func() {
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
@@ -49,4 +56,20 @@ func durationEnv(key string, fallback time.Duration) time.Duration {
 		}
 	}
 	return fallback
+}
+
+func splitEnv(key, fallback string) []string {
+	raw := env(key, fallback)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }

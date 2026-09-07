@@ -105,7 +105,7 @@ Allowed: `CONNECTED` → `RECONNECTING` → `CONNECTED`
 - Same pairing grant
 - Same MediaProjection session still alive
 - ICE restart / network switch (Wi-Fi ↔ cellular)
-- Operator WebRTC re-handshake **only** while Android projection remains alive (tab refresh policy: see unresolved list)
+- Operator WebRTC re-handshake **only** while Android projection remains alive (one `need_offer`; full tab reload with in-memory credentials closes after a 5s WS grace — see [M2 implementation notes](../implementation/m2-authenticated-webrtc-viewing.md))
 
 Forbidden silent restore:
 

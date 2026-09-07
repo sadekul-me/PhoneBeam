@@ -20,6 +20,7 @@ type Server struct {
 	cors     map[string]struct{}
 	limiters sync.Map
 	log      *log.Logger
+	socks    *sockets
 }
 
 func New(coord *session.Coordinator, corsOrigins []string, logger *log.Logger) *Server {
@@ -30,7 +31,7 @@ func New(coord *session.Coordinator, corsOrigins []string, logger *log.Logger) *
 			allowed[origin] = struct{}{}
 		}
 	}
-	return &Server{coord: coord, cors: allowed, log: logger}
+	return &Server{coord: coord, cors: allowed, log: logger, socks: newSockets()}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -42,12 +43,17 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/sessions/{id}/approve", s.approve)
 	mux.HandleFunc("POST /api/v1/sessions/{id}/reject", s.reject)
 	mux.HandleFunc("POST /api/v1/sessions/{id}/close", s.close)
+	mux.HandleFunc("POST /api/v1/sessions/{id}/projection", s.projection)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/ice", s.ice)
+	mux.HandleFunc("GET /api/v1/sessions/{id}/signal", s.signal)
 	return s.middleware(mux)
 }
 
 func (s *Server) middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+		if r.Header.Get("Upgrade") != "websocket" {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+		}
 		origin := r.Header.Get("Origin")
 		if origin != "" {
 			if _, ok := s.cors[origin]; ok {
@@ -221,6 +227,12 @@ func (s *Server) writeCoordError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "terminal", "session cannot be reused")
 	case errors.Is(err, session.ErrPairingNotPending), errors.Is(err, session.ErrWrongPairing):
 		writeError(w, http.StatusConflict, "invalid_state", err.Error())
+	case errors.Is(err, session.ErrSignalingNotAllowed):
+		writeError(w, http.StatusConflict, "signaling_not_allowed", err.Error())
+	case errors.Is(err, session.ErrMissingScreenRead):
+		writeError(w, http.StatusBadRequest, "screen_read_required", err.Error())
+	case errors.Is(err, session.ErrRoleExclusive):
+		writeError(w, http.StatusConflict, "role_exclusive", err.Error())
 	default:
 		var invalid *session.InvalidTransitionError
 		if errors.As(err, &invalid) {

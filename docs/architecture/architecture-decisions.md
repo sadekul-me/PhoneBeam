@@ -214,7 +214,7 @@ Each entry records: decision, status, recommended/locked choice, alternatives, t
 
 **Tradeoff.** Extra UX step or extra confirmation; actually defends against coordinator MITM.
 
-**Blocks.** M1 (SAS display architecture), M2 (fingerprint bind before frames). Exact SAS derivation is unresolved.
+**Blocks.** M1 (SAS display architecture), M2 (fingerprint bind before frames). M2 locks the HMAC-SHA256 v1/v2 transcripts in [M2 implementation notes](../implementation/m2-authenticated-webrtc-viewing.md).
 
 ---
 
@@ -403,3 +403,16 @@ These are **not** locked. Documented so they are not silently “decided in code
 | O13 | Protocol IDL location | Docs now; generated schemas when M1/M3 start | M1/M3 |
 
 O11 should be chosen when M0 starts so a LAN URL cannot leak into release builds.
+
+## M2 locks of previously open items
+
+Recorded here so they are not treated as still-open. Details live in
+[M2 implementation notes](../implementation/m2-authenticated-webrtc-viewing.md).
+
+| ID | Lock |
+|---|---|
+| O4 | HMAC-SHA256 pairing (`phonebeam-sas-v1`) and media (`phonebeam-sas-v2`) transcripts; golden vector `830 034` |
+| O6 | Phone offers, browser answers |
+| O7 | One authenticated `need_offer` re-handshake while projection lives; full document reload with in-memory tokens closes after 5s WS grace |
+| O9 | `iceTransportPolicy=all` by default; coordinator `PHONEBEAM_ICE_TRANSPORT_POLICY=relay` for force-TURN tests |
+| O8 | TURN **provider/region** remains infrastructure, not a code secret |

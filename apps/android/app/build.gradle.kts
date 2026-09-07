@@ -21,7 +21,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = 1
-        versionName = "0.2.0-m1"
+        versionName = "0.3.0-m2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -68,5 +68,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.webrtc.sdk)
+    implementation(libs.okhttp)
     testImplementation(libs.junit)
 }

@@ -16,6 +16,12 @@ data class RemoteSession(
     val deviceCapabilities: List<String>,
     val effectiveCapabilities: List<String>,
     val sas: String,
+    val sasMaterial: String = "",
+    val mediaTrusted: Boolean = false,
+    val captureScope: String = "",
+    val captureWidth: Int = 0,
+    val captureHeight: Int = 0,
+    val connectionPath: String = "",
 )
 
 sealed class CoordinatorResult<out T> {
@@ -75,7 +81,30 @@ class CoordinatorApi(private val origin: String) {
         }
     }
 
-    fun get(sessionId: String, token: String): CoordinatorResult<RemoteSession> {
+    fun reportProjection(
+        sessionId: String,
+        token: String,
+        status: String,
+        width: Int = 0,
+        height: Int = 0,
+        scope: String = "unknown",
+    ): CoordinatorResult<RemoteSession> {
+        val body = JSONObject()
+            .put("status", status)
+            .put("width", width)
+            .put("height", height)
+            .put("scope", scope)
+            .toString()
+        return when (val raw = request("POST", "/api/v1/sessions/${enc(sessionId)}/projection", body, token)) {
+            is CoordinatorResult.Err -> raw
+            is CoordinatorResult.Ok -> {
+                val session = parseSession(raw.value.optJSONObject("session") ?: return missing())
+                CoordinatorResult.Ok(session)
+            }
+        }
+    }
+
+    fun session(sessionId: String, token: String): CoordinatorResult<RemoteSession> {
         return when (val raw = request("GET", "/api/v1/sessions/${enc(sessionId)}", body = null, token = token)) {
             is CoordinatorResult.Err -> raw
             is CoordinatorResult.Ok -> {
@@ -138,6 +167,12 @@ class CoordinatorApi(private val origin: String) {
             deviceCapabilities = stringList(obj.optJSONArray("device_capabilities")),
             effectiveCapabilities = stringList(obj.optJSONArray("effective_capabilities")),
             sas = obj.optString("sas"),
+            sasMaterial = obj.optString("sas_material"),
+            mediaTrusted = obj.optBoolean("media_trusted"),
+            captureScope = obj.optString("capture_scope"),
+            captureWidth = obj.optInt("capture_width"),
+            captureHeight = obj.optInt("capture_height"),
+            connectionPath = obj.optString("connection_path"),
         )
     }
 

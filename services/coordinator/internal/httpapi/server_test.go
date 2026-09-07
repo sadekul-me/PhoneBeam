@@ -88,6 +88,16 @@ func TestCORSRejectsUnknownOrigin(t *testing.T) {
 	}
 }
 
+func TestICERequiresAuth(t *testing.T) {
+	_, h := testServer(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/sessions/x/ice", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("code=%d", rec.Code)
+	}
+}
+
 func TestOversizedJSONRejected(t *testing.T) {
 	_, h := testServer(t)
 	huge := `{"operator_display_name":"` + strings.Repeat("a", 20_000) + `","requested_capabilities":["screen.read"]}`

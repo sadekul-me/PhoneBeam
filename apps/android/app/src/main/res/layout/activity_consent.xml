@@ -153,6 +153,14 @@
                 android:enabled="false"
                 android:text="@string/pairing_reject" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/startShareButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/pairing_start_remote_share"
+                android:visibility="gone" />
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/resultCard"
                 android:layout_width="match_parent"

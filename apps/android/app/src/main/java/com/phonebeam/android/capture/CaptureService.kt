@@ -27,6 +27,8 @@ import androidx.core.app.NotificationCompat
 import com.phonebeam.android.MainActivity
 import com.phonebeam.android.PhoneBeamApp
 import com.phonebeam.android.R
+import com.phonebeam.android.webrtc.ViewingActivity
+import com.phonebeam.android.webrtc.ViewingRuntime
 
 /**
  * Visible MediaProjection capture. START_NOT_STICKY: process death does not silently recapture.
@@ -49,6 +51,8 @@ class CaptureService : Service() {
     private var currentFps: Float = 0f
     private var lastPreviewFrame: Long = 0
     private var capturing: Boolean = false
+    private var viewing: ViewingRuntime? = null
+    private var remoteMode: Boolean = false
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
@@ -125,12 +129,50 @@ class CaptureService : Service() {
             return
         }
 
+        remoteMode = (application as PhoneBeamApp).viewingAuth != null
         val notification = buildNotification()
         startForeground(
             NOTIFICATION_ID,
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION,
         )
+
+        val app = application as PhoneBeamApp
+        val auth = app.viewingAuth
+        if (auth != null) {
+            remoteMode = true
+            capturing = true
+            session.dispatch(CaptureEvent.CaptureStarted)
+            val runtime = ViewingRuntime(
+                applicationContext,
+                auth,
+                resultData,
+                object : ViewingRuntime.Listener {
+                    override fun onState(state: String) {
+                        app.viewingState = state
+                    }
+                    override fun onMediaSas(code: String) {
+                        app.mediaSas = code
+                    }
+                    override fun onPath(path: String) {
+                        app.connectionPath = path
+                    }
+                    override fun onFatal(reason: String) {
+                        Handler(mainLooper).post {
+                            if (reason == "projection_revoked") {
+                                session.dispatch(CaptureEvent.ProjectionRevoked)
+                            } else {
+                                session.dispatch(CaptureEvent.Failed(reason))
+                            }
+                            tearDownCapture(notifyStopped = true)
+                        }
+                    }
+                },
+            )
+            viewing = runtime
+            runtime.start()
+            return
+        }
 
         val thread = HandlerThread("phonebeam-m0-capture").also { it.start() }
         captureThread = thread
@@ -272,6 +314,9 @@ class CaptureService : Service() {
 
     private fun tearDownCapture(notifyStopped: Boolean) {
         capturing = false
+        viewing?.stop()
+        viewing = null
+        (application as? PhoneBeamApp)?.clearViewing()
         displayManager?.unregisterDisplayListener(displayListener)
         virtualDisplay?.release()
         virtualDisplay = null
@@ -328,7 +373,7 @@ class CaptureService : Service() {
         val openApp = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java),
+            Intent(this, if (remoteMode) ViewingActivity::class.java else MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE,
         )
         val stop = PendingIntent.getService(
@@ -339,8 +384,12 @@ class CaptureService : Service() {
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(R.string.capture_notification_title))
-            .setContentText(getString(R.string.capture_notification_text))
+            .setContentTitle(
+                if (remoteMode) getString(R.string.remote_notification_title) else getString(R.string.capture_notification_title),
+            )
+            .setContentText(
+                if (remoteMode) getString(R.string.remote_notification_text) else getString(R.string.capture_notification_text),
+            )
             .setOngoing(true)
             .setSilent(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
