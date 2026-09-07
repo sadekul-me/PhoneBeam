@@ -10,11 +10,12 @@ object Capabilities {
     fun isKnown(name: String): Boolean = name in known
 
     /**
-     * M1 reports what this build can actually enforce later.
-     * MediaProjection exists (M0) so screen.read is available.
-     * AccessibilityService and audio capture are not in this milestone.
+     * Platform-supported capabilities for this build.
+     * `input.control` is device-available because AccessibilityService exists;
+     * live execution still requires the user to enable it and the PEP to allow it.
+     * Audio remains unimplemented.
      */
-    fun deviceAvailable(): List<String> = listOf(SCREEN_READ)
+    fun deviceAvailable(): List<String> = listOf(SCREEN_READ, INPUT_CONTROL)
 
     fun intersect(requested: List<String>, granted: List<String>, device: List<String>): List<String> {
         return known.filter { it in requested && it in granted && it in device }

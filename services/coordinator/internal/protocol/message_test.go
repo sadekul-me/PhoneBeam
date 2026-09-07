@@ -93,3 +93,13 @@ func TestStatsAndHelloRules(t *testing.T) {
 		t.Fatalf("second hello: %v", err)
 	}
 }
+
+func TestControlCommandsRejectedOnSignaling(t *testing.T) {
+	env, err := Parse([]byte(`{"v":1,"type":"tap"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Validate(env, "operator", "CONNECTED", true); err != ErrUnknownType {
+		t.Fatalf("control must not use coordinator signaling: %v", err)
+	}
+}

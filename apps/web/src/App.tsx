@@ -11,6 +11,7 @@ import {
 } from "./session";
 import { decodeSasMaterial, hasRemoteControlUi, preserveAspect } from "./sas";
 import { connectSignaling, fetchIce, sendSignal } from "./signaling";
+import { CONTROL_VERSION, controlLive, pointerToNormalized, type ControlEnvelope } from "./control";
 import { createViewerPeer, type ViewerHandle } from "./viewer";
 import QRCode from "qrcode";
 
@@ -29,11 +30,15 @@ export function App() {
   const [rtt, setRtt] = useState(0);
   const [frameSize, setFrameSize] = useState("");
   const [reconnectNonce, setReconnectNonce] = useState(0);
+  const [liveCaps, setLiveCaps] = useState<string[]>([]);
+  const [controlError, setControlError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const viewerRef = useRef<ViewerHandle | null>(null);
   const reconnectsRef = useRef(0);
   const closingRef = useRef(false);
+  const seqRef = useRef(1);
+  const dragRef = useRef<{ x: number; y: number } | null>(null);
 
   function teardownMedia() {
     closingRef.current = true;
@@ -46,6 +51,8 @@ export function App() {
     viewerRef.current = null;
     setStream(null);
     setMediaSas("");
+    setLiveCaps([]);
+    setControlError(null);
   }
 
   useEffect(() => {
@@ -160,6 +167,17 @@ export function App() {
                 setFrameSize(`${stats.width}×${stats.height}`);
               }
             },
+            onControl: (msg) => {
+              if (msg.type === "capability_update" && Array.isArray(msg.body.effective)) {
+                setLiveCaps(msg.body.effective.map(String));
+              }
+              if (msg.type === "error") {
+                setControlError(String(msg.body.code ?? "error"));
+              }
+              if (msg.type === "ack") {
+                setControlError(null);
+              }
+            },
           },
         });
         viewerRef.current = viewer;
@@ -220,13 +238,51 @@ export function App() {
 
   const controlLabels = ["Disconnect"];
   const unsafeControls = hasRemoteControlUi(controlLabels);
+  const live = session ? controlLive(liveCaps, session.state) : false;
+
+  function nextControl(type: string, cap: string, body: Record<string, unknown>): ControlEnvelope {
+    const seq = seqRef.current;
+    seqRef.current += 1;
+    return {
+      v: CONTROL_VERSION,
+      sid: session?.id ?? "",
+      seq,
+      ts: Date.now(),
+      cap,
+      type,
+      body,
+    };
+  }
+
+  function sendCommand(type: string, cap: string, body: Record<string, unknown>) {
+    const sent = viewerRef.current?.sendControl(nextControl(type, cap, body));
+    if (!sent) {
+      setControlError("control_channel_closed");
+    }
+  }
+
+  function videoLocalPoint(ev: React.PointerEvent<HTMLVideoElement>): { x: number; y: number } | null {
+    const el = videoRef.current;
+    if (!el || !el.videoWidth || !el.videoHeight) {
+      return null;
+    }
+    const rect = el.getBoundingClientRect();
+    return pointerToNormalized(
+      rect.width,
+      rect.height,
+      el.videoWidth,
+      el.videoHeight,
+      ev.clientX - rect.left,
+      ev.clientY - rect.top,
+    );
+  }
 
   return (
     <main className="page">
       <header>
         <h1>PhoneBeam operator</h1>
         <p className="muted">
-          M2 viewing. No remote control. Coordinator: <code>{coordinatorBase()}</code>
+          M3 viewing and supported control. Coordinator: <code>{coordinatorBase()}</code>
         </p>
       </header>
 
@@ -288,18 +344,77 @@ export function App() {
           {session.state === "FAILED_ICE" ? (
             <p className="error">ICE connectivity failed. One re-handshake is attempted while capture stays live.</p>
           ) : null}
+          <p>
+            <strong>Mode:</strong> {live ? "REMOTE CONTROL ENABLED" : "VIEW ONLY"}
+            {session.effective_capabilities.includes("input.control") && !live
+              ? " · input.control granted, waiting for Accessibility on the phone"
+              : ""}
+          </p>
           <video
             ref={videoRef}
             className="remote"
             autoPlay
             playsInline
-            style={{ objectFit: preserveAspect(), display: stream ? "block" : "none" }}
+            style={{
+              objectFit: preserveAspect(),
+              display: stream ? "block" : "none",
+              cursor: live ? "crosshair" : "default",
+            }}
+            onPointerDown={(ev) => {
+              if (!live) {
+                return;
+              }
+              const pt = videoLocalPoint(ev);
+              if (!pt) {
+                setControlError("unsupported_geometry");
+                return;
+              }
+              dragRef.current = pt;
+            }}
+            onPointerUp={(ev) => {
+              if (!live || !dragRef.current) {
+                return;
+              }
+              const end = videoLocalPoint(ev);
+              const start = dragRef.current;
+              dragRef.current = null;
+              if (!end) {
+                setControlError("unsupported_geometry");
+                return;
+              }
+              const dx = end.x - start.x;
+              const dy = end.y - start.y;
+              if (Math.hypot(dx, dy) < 0.02) {
+                sendCommand("tap", "input.control", { x: end.x, y: end.y });
+              } else {
+                sendCommand("swipe", "input.control", {
+                  x1: start.x,
+                  y1: start.y,
+                  x2: end.x,
+                  y2: end.y,
+                  duration_ms: 180,
+                });
+              }
+            }}
           />
+          {live ? (
+            <div className="controls">
+              <button type="button" onClick={() => sendCommand("back", "input.control", {})}>
+                Back
+              </button>
+              <button type="button" onClick={() => sendCommand("home", "input.control", {})}>
+                Home
+              </button>
+            </div>
+          ) : null}
+          {controlError ? <p className="error">Control: {controlError}</p> : null}
           <dl>
             <dt>Requested</dt>
             <dd>{session.requested_capabilities.join(", ") || "none"}</dd>
             <dt>Effective</dt>
             <dd>{session.effective_capabilities.join(", ") || "none"}</dd>
+            <dt>Live</dt>
+            <dd>{liveCaps.join(", ") || "waiting"}</dd>
             <dt>Capture</dt>
             <dd>
               {session.capture_scope || "unknown"}

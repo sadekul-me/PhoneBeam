@@ -1,6 +1,7 @@
 import { extractFingerprint, mediaDisplay } from "./sas";
 import { sendSignal } from "./signaling";
 import { iceAllowsPeerReady, pathFromCandidateType, type IceConfig, type SignalMessage } from "./session";
+import { CONTROL_CHANNEL, parseControl, type ControlEnvelope } from "./control";
 
 export type ViewerCallbacks = {
   onTrack: (stream: MediaStream) => void;
@@ -9,11 +10,13 @@ export type ViewerCallbacks = {
   onMediaSas: (code: string) => void;
   onError: (reason: string) => void;
   onStats?: (stats: { bitrateKbps?: number; rttMs?: number; width?: number; height?: number }) => void;
+  onControl?: (msg: ControlEnvelope) => void;
 };
 
 export type ViewerHandle = {
   handleSignal: (msg: SignalMessage) => Promise<void>;
   close: () => void;
+  sendControl: (env: ControlEnvelope) => boolean;
 };
 
 export function createViewerPeer(input: {
@@ -40,6 +43,22 @@ export function createViewerPeer(input: {
   let readySent = false;
   let iceUp = false;
   const bytesSample = { bytes: 0, at: 0 };
+  let control: RTCDataChannel | null = null;
+
+  pc.addEventListener("datachannel", (ev) => {
+    if (ev.channel.label !== CONTROL_CHANNEL) {
+      ev.channel.close();
+      return;
+    }
+    control = ev.channel;
+    control.addEventListener("message", (msg) => {
+      try {
+        input.callbacks.onControl?.(parseControl(String(msg.data)));
+      } catch {
+        /* ignore malformed phone messages */
+      }
+    });
+  });
 
   pc.addEventListener("track", (ev) => {
     const stream = ev.streams[0] ?? new MediaStream([ev.track]);
@@ -132,7 +151,24 @@ export function createViewerPeer(input: {
       }
     },
     close() {
+      control?.close();
+      control = null;
       pc.close();
+    },
+    sendControl(env: ControlEnvelope) {
+      if (!control || control.readyState !== "open") {
+        return false;
+      }
+      control.send(JSON.stringify({
+        v: env.v,
+        sid: env.sid,
+        seq: env.seq,
+        ts: env.ts,
+        cap: env.cap,
+        type: env.type,
+        body: env.body,
+      }));
+      return true;
     },
   };
 }

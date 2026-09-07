@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PhoneBeam</string>
-    <string name="milestone_m0">M2 · Authenticated realtime viewing</string>
-    <string name="m0_subtitle">Paired screen viewing uses WebRTC after owner capability approval and the official Android capture dialog. There is no remote control in this milestone.</string>
+    <string name="milestone_m0">M3 · Supported remote control</string>
+    <string name="m0_subtitle">Paired screen viewing uses WebRTC after owner capability approval and the official Android capture dialog. Remote control is optional, requires input.control plus an explicitly enabled AccessibilityService, and never bypasses Android.</string>
     <string name="capture_state_label">Capture state</string>
     <string name="state_idle">Idle</string>
     <string name="state_requesting">Requesting screen permission</string>
@@ -45,17 +45,22 @@
     <string name="pairing_sas_label">PhoneBeam verification code</string>
     <string name="pairing_sas_compare">Read this code aloud and confirm it matches the operator screen. Mismatch means reject.</string>
     <string name="pairing_requested_caps">Requested capabilities (uncheck to withhold)</string>
-    <string name="pairing_device_caps">Available on this device in M1</string>
+    <string name="pairing_device_caps">Available on this device in M3</string>
     <string name="pairing_approve">Approve selected capabilities</string>
     <string name="pairing_reject">Reject</string>
     <string name="pairing_result_title">Session state</string>
-    <string name="pairing_no_stream">Pairing is complete. Remote viewing starts only after you approve Android screen capture below.</string>
+    <string name="pairing_no_stream">Pairing is complete. Remote viewing starts only after you approve Android screen capture below. Remote control also requires enabling PhoneBeam in Android Accessibility settings.</string>
     <string name="pairing_start_remote_share">Start screen sharing</string>
+    <string name="pairing_open_accessibility">Open Accessibility settings</string>
+    <string name="a11y_description">PhoneBeam uses Accessibility only to perform taps, swipes, Back, and Home that you approve for a live support session. It does not read on-screen text.</string>
     <string name="remote_notification_title">PhoneBeam remote support is active</string>
     <string name="remote_notification_text">This screen is being shared with the paired operator. Stop sharing from this notification or in the app.</string>
     <string name="viewing_title">Remote support session</string>
     <string name="viewing_sharing">Screen is being shared</string>
     <string name="viewing_pairing_sas">Pairing code</string>
     <string name="viewing_media_sas">Verified media code</string>
+    <string name="viewing_control_status">Control</string>
+    <string name="viewing_control_off">View only. Enable PhoneBeam in Accessibility settings to allow supported gestures.</string>
+    <string name="viewing_control_on">Supported remote control is enabled</string>
     <string name="viewing_disconnect">Disconnect</string>
 </resources>

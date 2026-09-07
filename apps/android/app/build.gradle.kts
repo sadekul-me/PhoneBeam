@@ -21,7 +21,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = 1
-        versionName = "0.3.0-m2"
+        versionName = "0.4.0-m3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -71,4 +71,5 @@ dependencies {
     implementation(libs.webrtc.sdk)
     implementation(libs.okhttp)
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
 }

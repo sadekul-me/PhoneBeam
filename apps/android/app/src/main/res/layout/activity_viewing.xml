@@ -38,6 +38,20 @@
         android:layout_marginTop="4dp" />
 
     <TextView
+        android:id="@+id/controlValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/viewing_control_off" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/accessibilitySettingsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/pairing_open_accessibility" />
+
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"

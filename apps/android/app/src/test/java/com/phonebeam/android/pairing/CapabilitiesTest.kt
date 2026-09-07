@@ -24,9 +24,9 @@ class CapabilitiesTest {
     }
 
     @Test
-    fun m1DeviceAvailabilityExcludesControlAndAudio() {
-        assertEquals(listOf("screen.read"), Capabilities.deviceAvailable())
-        assertFalse("input.control" in Capabilities.deviceAvailable())
+    fun m3DeviceAvailabilityIncludesControlNotAudio() {
+        assertEquals(listOf("screen.read", "input.control"), Capabilities.deviceAvailable())
+        assertTrue("input.control" in Capabilities.deviceAvailable())
         assertFalse("audio.read" in Capabilities.deviceAvailable())
     }
 }

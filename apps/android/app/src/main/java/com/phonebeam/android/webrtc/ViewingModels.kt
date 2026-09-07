@@ -9,6 +9,7 @@ data class ViewingAuth(
     val operatorName: String,
     val pairingSas: String,
     val requestedCaps: List<String>,
+    val effectiveCaps: List<String>,
 )
 
 data class IceServerJson(

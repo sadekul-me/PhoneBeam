@@ -1,6 +1,9 @@
-# Control protocol (conceptual)
+# Control protocol
 
-Status: architecture for M3–M4. Not implemented in this documentation milestone. No DataChannel in M0–M2.
+Status: implemented for M3 discrete actions (`tap`, `swipe`, `back`, `home`,
+`ping`/`pong`, `ack`/`error`, `capability_update`, `session_close`). Transport is
+the WebRTC DataChannel `phonebeam-control`. The coordinator does not relay
+commands. See [M3 implementation notes](../implementation/m3-supported-remote-control.md).
 
 Legend: **Invariant** · **MVP decision** · **Platform limitation** · **Security requirement** · **Future / non-MVP**
 

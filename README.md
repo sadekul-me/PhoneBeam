@@ -13,11 +13,11 @@ unsupported.
 
 ## Current phase
 
-**M2 — Authenticated realtime viewing** is implemented in code.
+**M3 — Supported remote control** is implemented in code.
 
-M0 local MediaProjection remains as an on-device proof. M1 pairing, consent, and capability grants remain required before any remote video. M2 adds authenticated WebRTC viewing from the paired browser. There is still no remote input, AccessibilityService, audio, recording, or unattended access.
+M0 local MediaProjection remains as an on-device proof. M1 pairing, consent, and capability grants remain required. M2 authenticated WebRTC viewing remains required. M3 adds an optional WebRTC DataChannel for tap/swipe/Back/Home after the owner grants `input.control` and explicitly enables PhoneBeam's AccessibilityService. There is still no audio, recording, keyboard/HID, unattended access, or window-content scraping.
 
-See [M2 implementation notes](docs/implementation/m2-authenticated-webrtc-viewing.md), [M1 implementation notes](docs/implementation/m1-secure-session.md), and [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
+See [M3 implementation notes](docs/implementation/m3-supported-remote-control.md), [M2 implementation notes](docs/implementation/m2-authenticated-webrtc-viewing.md), [M1 implementation notes](docs/implementation/m1-secure-session.md), and [M0 implementation notes](docs/implementation/m0-mediaprojection.md).
 
 ## Architecture
 
@@ -30,6 +30,7 @@ See [M2 implementation notes](docs/implementation/m2-authenticated-webrtc-viewin
 - [M0 implementation notes](docs/implementation/m0-mediaprojection.md)
 - [M1 implementation notes](docs/implementation/m1-secure-session.md)
 - [M2 implementation notes](docs/implementation/m2-authenticated-webrtc-viewing.md)
+- [M3 implementation notes](docs/implementation/m3-supported-remote-control.md)
 - [Pairing protocol](docs/protocol/pairing-protocol.md)
 - [Control protocol](docs/protocol/control-protocol.md)
 

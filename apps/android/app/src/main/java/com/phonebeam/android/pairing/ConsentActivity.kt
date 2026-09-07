@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Base64
 import android.view.View
 import android.widget.CheckBox
@@ -64,6 +65,7 @@ class ConsentActivity : AppCompatActivity() {
                 operatorName = sess.operatorDisplayName,
                 pairingSas = sess.sas,
                 requestedCaps = sess.requestedCapabilities,
+                effectiveCaps = sess.effectiveCapabilities,
             )
             val transition = captureSession.dispatch(CaptureEvent.PermissionGranted)
             if (transition.effect == CaptureEffect.StartCaptureService) {
@@ -186,6 +188,11 @@ class ConsentActivity : AppCompatActivity() {
             session.effectiveCapabilities,
         )
         binding.startShareButton.visibility = if (canShare) View.VISIBLE else View.GONE
+        val wantsControl = "input.control" in session.effectiveCapabilities
+        binding.accessibilitySettingsButton.visibility = if (wantsControl) View.VISIBLE else View.GONE
+        binding.accessibilitySettingsButton.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
     }
 
     private fun startRemoteShare() {

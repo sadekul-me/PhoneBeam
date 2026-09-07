@@ -6,6 +6,8 @@ import android.media.projection.MediaProjection
 import android.os.Build
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import com.phonebeam.android.PhoneBeamApp
+import com.phonebeam.android.control.ControlSession
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -64,6 +66,7 @@ class ViewingRuntime(
     private var iceFailGeneration = 0
     private var stopped = false
     private val helloOk = CountDownLatch(1)
+    private var control: ControlSession? = null
 
     fun start() {
         Thread {
@@ -110,6 +113,16 @@ class ViewingRuntime(
         pc = factory!!.createPeerConnection(rtc, pcObserver) ?: error("peerconnection")
         val sender = pc!!.addTrack(videoTrack)
         preferVp8(sender?.track())
+        val controlSession = ControlSession(
+            context,
+            auth.sessionId,
+            auth.effectiveCaps,
+        ) {
+            listener.onFatal("session_close")
+        }
+        control = controlSession
+        (context.applicationContext as? PhoneBeamApp)?.controlSession = controlSession
+        controlSession.attach(pc!!, videoTrack!!, w, h)
         postProjection("active", w, h)
         connectWs()
         createOffer(iceRestart = false)
@@ -208,7 +221,10 @@ class ViewingRuntime(
     private fun handleMessage(text: String) {
         val obj = JSONObject(text)
         when (obj.optString("type")) {
-            "state" -> listener.onState(obj.optString("state"))
+            "state" -> {
+                listener.onState(obj.optString("state"))
+                control?.onCoordinatorState(obj.optString("state"))
+            }
             "sdp_answer" -> {
                 val sdp = obj.getJSONObject("sdp")
                 val desc = SessionDescription(SessionDescription.Type.ANSWER, sdp.getString("sdp"))
@@ -434,6 +450,9 @@ class ViewingRuntime(
         }
         ws?.close(1000, "hangup")
         ws = null
+        control?.stop()
+        control = null
+        (context.applicationContext as? PhoneBeamApp)?.controlSession = null
         try {
             capturer?.stopCapture()
         } catch (_: Exception) {

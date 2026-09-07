@@ -60,8 +60,9 @@ button {
   color: #555;
 }
 
-.error {
-  color: #a40000;
+.controls {
+  display: flex;
+  gap: 0.5rem;
 }
 
 code {
